@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.loli.net/css?family=Monda:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-bounce.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="说实话，《深度探索C++对象模型》在我读的时候（现在也还在读）就决定要写这篇文章了，因为讲得太清晰了，没有过多的重复，言简意赅，直击重点。侯捷老师适当的翻译也是相当到位，属实是C++学习必读书目之一啊。这篇文章是第一章的简要总结。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《深度探索C++对象模型》第一章:关于对象">
+<meta property="og:url" content="http://example.com/2021/04/15/%E3%80%8A%E6%B7%B1%E5%BA%A6%E6%8E%A2%E7%B4%A2C-%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B%E3%80%8B%E7%AC%AC%E4%B8%80%E7%AB%A0/index.html">
+<meta property="og:site_name" content="英国大理石">
+<meta property="og:description" content="说实话，《深度探索C++对象模型》在我读的时候（现在也还在读）就决定要写这篇文章了，因为讲得太清晰了，没有过多的重复，言简意赅，直击重点。侯捷老师适当的翻译也是相当到位，属实是C++学习必读书目之一啊。这篇文章是第一章的简要总结。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2021/04/15/BTq1SiX5jILCEwu.png">
+<meta property="og:image" content="https://i.loli.net/2021/04/15/7JipYMd6Z1gs4lA.png">
+<meta property="og:image" content="https://i.loli.net/2021/04/15/VslU4KSqWNm5ECo.png">
+<meta property="article:published_time" content="2021-04-15T13:47:54.000Z">
+<meta property="article:modified_time" content="2021-04-15T14:53:08.378Z">
+<meta property="article:author" content="M_AI">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="底层">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/04/15/BTq1SiX5jILCEwu.png">
+
+<link rel="canonical" href="http://example.com/2021/04/15/%E3%80%8A%E6%B7%B1%E5%BA%A6%E6%8E%A2%E7%B4%A2C-%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B%E3%80%8B%E7%AC%AC%E4%B8%80%E7%AB%A0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《深度探索C++对象模型》第一章:关于对象 | 英国大理石</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">英国大理石</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-resources">
+
+    <a href="/resources/" rel="section"><i class="fa fa-download fa-fw"></i>资源</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/04/15/%E3%80%8A%E6%B7%B1%E5%BA%A6%E6%8E%A2%E7%B4%A2C-%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B%E3%80%8B%E7%AC%AC%E4%B8%80%E7%AB%A0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.png">
+      <meta itemprop="name" content="M_AI">
+      <meta itemprop="description" content="Think of nothing,think about more things">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="英国大理石">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《深度探索C++对象模型》第一章:关于对象
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-04-15 21:47:54 / 修改时间：22:53:08" itemprop="dateCreated datePublished" datetime="2021-04-15T21:47:54+08:00">2021-04-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>说实话，《深度探索C++对象模型》在我读的时候（现在也还在读）就决定要写这篇文章了，因为讲得太清晰了，没有过多的重复，言简意赅，直击重点。侯捷老师适当的翻译也是相当到位，属实是C++学习必读书目之一啊。这篇文章是第一章的简要总结。</p>
+<a id="more"></a>
+
+<h1 id="Before-Start"><a href="#Before-Start" class="headerlink" title="Before Start"></a>Before Start</h1><p>相较于C，C++的布局与存取时间上的主要额外负担是由virtual引起的</p>
+<ul>
+<li>virtual function</li>
+<li>virtual base class</li>
+</ul>
+<h1 id="1-C-对象模式"><a href="#1-C-对象模式" class="headerlink" title="1.C++对象模式"></a>1.C++对象模式</h1><p>分类</p>
+<p>class data members:</p>
+<ul>
+<li>static</li>
+<li>nonstatic</li>
+</ul>
+<p>class member functions:</p>
+<ul>
+<li>static</li>
+<li>nonstatic</li>
+<li>virtual</li>
+</ul>
+<h2 id="对象塑模方式（Modeling）"><a href="#对象塑模方式（Modeling）" class="headerlink" title="对象塑模方式（Modeling）"></a>对象塑模方式（Modeling）</h2><h3 id="简单对象模型（A-Simple-Object-Model）"><a href="#简单对象模型（A-Simple-Object-Model）" class="headerlink" title="简单对象模型（A Simple Object Model）"></a>简单对象模型（A Simple Object Model）</h3><p>object是slot的集合，每一个slot指向一个members(data and function),如图：</p>
+<p><img src="https://i.loli.net/2021/04/15/BTq1SiX5jILCEwu.png" alt="IMG_0162.PNG"></p>
+<p>members本身并不放在object中，只有指向member的指针（slot）放在object内</p>
+<ul>
+<li>优点：<ul>
+<li>避免了”Object的member有不同的类型，因而需要不同的存储空间“而招致的问题</li>
+<li>class大小容易计算（slot大小*slot数量）</li>
+</ul>
+</li>
+<li>缺点：<ul>
+<li>抽象层，性能消耗</li>
+</ul>
+</li>
+</ul>
+<h3 id="表格驱动对象模型（A-Table-driven-Object-Model）"><a href="#表格驱动对象模型（A-Table-driven-Object-Model）" class="headerlink" title="表格驱动对象模型（A Table-driven Object Model）"></a>表格驱动对象模型（A Table-driven Object Model）</h3><p>把所有与members相关的信息都抽出来，放在一个data member table和一个member function table之中，class object本身则内含指向这两个表格的指针。</p>
+<ul>
+<li>data member table:直接持有data本身</li>
+<li>member function table:含有一系列slots，每一个slot指向一个member function</li>
+</ul>
+<p>如图：</p>
+<p><img src="https://i.loli.net/2021/04/15/7JipYMd6Z1gs4lA.png" alt="IMG_0164.PNG"></p>
+<h3 id="C-对象模型（The-C-Object-Model）"><a href="#C-对象模型（The-C-Object-Model）" class="headerlink" title="C++对象模型（The C++ Object Model）"></a>C++对象模型（The C++ Object Model）</h3><p>nonstatic data members被配置于每一个class object之内，static data members则被存放在个别的class object之外。static 和nonstatic function members也被放在个别的class object之外。</p>
+<p>virtual function 实现：</p>
+<ol>
+<li>每一个class产生出一堆指向virtual functions的指针，放在表格之中。这个表格被称为 virtual table（vtbl）。</li>
+<li>每一个class object被安插一个指针，指向相关的virtual table。（vptr）（这玩意后面经常出现，在构造语义里面）</li>
+</ol>
+<p>如图：</p>
+<p><img src="https://i.loli.net/2021/04/15/VslU4KSqWNm5ECo.png" alt="IMG_0163.PNG"></p>
+<p>各模型的空间，存取开销和间接性不在此写出。</p>
+<h2 id="对象模型如何影响程序？（How-the-Object-Model-Effects-Programs）"><a href="#对象模型如何影响程序？（How-the-Object-Model-Effects-Programs）" class="headerlink" title="对象模型如何影响程序？（How the Object Model Effects Programs）"></a>对象模型如何影响程序？（How the Object Model Effects Programs）</h2><p>这里涉及到编译器对原代码的改写，我懒得写下来了。</p>
+<h1 id="2-关键词带来的差异"><a href="#2-关键词带来的差异" class="headerlink" title="2.关键词带来的差异"></a>2.关键词带来的差异</h1><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> (*pf)(<span class="number">1024</span>);</span><br><span class="line"><span class="comment">//被解析为一个invocation</span></span><br><span class="line"><span class="keyword">int</span> (*pf)();</span><br><span class="line"><span class="comment">//被解析为一个declaration</span></span><br></pre></td></tr></table></figure>
+
+<p>当语言无法区分那是一个声明还是一个表达式的时候，我们需要一个超越语言范围的规则，而该规则会把第二个式子判断为一个声明。</p>
+<h2 id="关键词的困扰"><a href="#关键词的困扰" class="headerlink" title="关键词的困扰"></a>关键词的困扰</h2><p>Q：”什么时候用struct替代class“</p>
+<p>A：”当它让一个人感觉比较好的时候“</p>
+<p>用户自定义类型，包含封装等语义，用class。单纯数据集合用struct</p>
+<h3 id="策略性正确的struct"><a href="#策略性正确的struct" class="headerlink" title="策略性正确的struct"></a>策略性正确的struct</h3><p>由于c++存在private和public，不能保证内存布局与以前c中的struct相同，因此有些技巧不能用了。</p>
+<h1 id="3-对象的差异"><a href="#3-对象的差异" class="headerlink" title="3.对象的差异"></a>3.对象的差异</h1><p>programming paradigms:</p>
+<ul>
+<li>程序模型（precedural model）：普通函数族。</li>
+<li>抽象数据类型模型（abstract data type model，ADT）：class的成员的类型可以编译期方便替换。</li>
+<li>面向对象模型（object-oriented model）：大量虚函数派发，使用多态。</li>
+</ul>
+<p>需要多少内存才能够表现一个class object？</p>
+<ul>
+<li>nonstatic data members的总和大小</li>
+<li>由于alignment的需要而填补（padding）上去的空间</li>
+<li>为了支持virtual而由内部产生的任何额外负担（overhead）</li>
+</ul>
+<h2 id="指针的类型"><a href="#指针的类型" class="headerlink" title="指针的类型"></a>指针的类型</h2><p>不同类型的指针有啥异同？</p>
+<ul>
+<li>同平台大小相同，32位就4字节，64位8字节。</li>
+<li>指针影响的是编译器解析一个地址的方式，转化（cast）其实是一种编译器指令，大部分情况下它并不改变一个指针所含的真正地址，它只影响”被指出之内存的大小和其内容“的解释方式。</li>
+</ul>
+<h3 id="加上多态"><a href="#加上多态" class="headerlink" title="加上多态"></a>加上多态</h3><p>为啥pointer和reference支持多态？</p>
+<p>因为它们并不引发内存中任何”与类型有关的内存寄托操作“，会受到改变的，只有它们所指向内存的”大小和内容解释方式“而已。</p>
+<p>派生对象之间直接转型会引起切割问题。</p>
+<h1 id="After"><a href="#After" class="headerlink" title="After"></a>After</h1><p>写得很粗略（之后可能加点东西上来），只写了最重要的部分，还有很多比较重要的（但是我之前就比较熟悉了）没写，想要详细了解，还是得看书。</p>
+<p>下一节：构造函数语意学（The Semantics of Constructors）。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>M_AI
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2021/04/15/%E3%80%8A%E6%B7%B1%E5%BA%A6%E6%8E%A2%E7%B4%A2C-%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B%E3%80%8B%E7%AC%AC%E4%B8%80%E7%AB%A0/" title="《深度探索C++对象模型》第一章:关于对象">http://example.com/2021/04/15/《深度探索C-对象模型》第一章/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"># C++</a>
+              <a href="/tags/%E5%BA%95%E5%B1%82/" rel="tag"># 底层</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/04/05/%E6%B2%A1%E6%9C%89%E5%8E%95%E7%BA%B8/" rel="prev" title="没有厕纸">
+      <i class="fa fa-chevron-left"></i> 没有厕纸
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Before-Start"><span class="nav-number">1.</span> <span class="nav-text">Before Start</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#1-C-%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">1.C++对象模式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E5%A1%91%E6%A8%A1%E6%96%B9%E5%BC%8F%EF%BC%88Modeling%EF%BC%89"><span class="nav-number">2.1.</span> <span class="nav-text">对象塑模方式（Modeling）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%80%E5%8D%95%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B%EF%BC%88A-Simple-Object-Model%EF%BC%89"><span class="nav-number">2.1.1.</span> <span class="nav-text">简单对象模型（A Simple Object Model）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A8%E6%A0%BC%E9%A9%B1%E5%8A%A8%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B%EF%BC%88A-Table-driven-Object-Model%EF%BC%89"><span class="nav-number">2.1.2.</span> <span class="nav-text">表格驱动对象模型（A Table-driven Object Model）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#C-%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B%EF%BC%88The-C-Object-Model%EF%BC%89"><span class="nav-number">2.1.3.</span> <span class="nav-text">C++对象模型（The C++ Object Model）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E6%A8%A1%E5%9E%8B%E5%A6%82%E4%BD%95%E5%BD%B1%E5%93%8D%E7%A8%8B%E5%BA%8F%EF%BC%9F%EF%BC%88How-the-Object-Model-Effects-Programs%EF%BC%89"><span class="nav-number">2.2.</span> <span class="nav-text">对象模型如何影响程序？（How the Object Model Effects Programs）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2-%E5%85%B3%E9%94%AE%E8%AF%8D%E5%B8%A6%E6%9D%A5%E7%9A%84%E5%B7%AE%E5%BC%82"><span class="nav-number">3.</span> <span class="nav-text">2.关键词带来的差异</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E8%AF%8D%E7%9A%84%E5%9B%B0%E6%89%B0"><span class="nav-number">3.1.</span> <span class="nav-text">关键词的困扰</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AD%96%E7%95%A5%E6%80%A7%E6%AD%A3%E7%A1%AE%E7%9A%84struct"><span class="nav-number">3.1.1.</span> <span class="nav-text">策略性正确的struct</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#3-%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%B7%AE%E5%BC%82"><span class="nav-number">4.</span> <span class="nav-text">3.对象的差异</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8C%87%E9%92%88%E7%9A%84%E7%B1%BB%E5%9E%8B"><span class="nav-number">4.1.</span> <span class="nav-text">指针的类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E4%B8%8A%E5%A4%9A%E6%80%81"><span class="nav-number">4.1.1.</span> <span class="nav-text">加上多态</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#After"><span class="nav-number">5.</span> <span class="nav-text">After</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="M_AI"
+      src="/images/avatar.png">
+  <p class="site-author-name" itemprop="name">M_AI</p>
+  <div class="site-description" itemprop="description">Think of nothing,think about more things</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+      <iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86 src="//music.163.com/outchain/player?type=2&id=1339029454&auto=1&height=66"></iframe>
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020-11 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">M_AI</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script size="300" alpha="0.6" zIndex="-1" src="/lib/canvas-ribbon/canvas-ribbon.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/hibiki.model.json"},"display":{"position":"right","width":170,"height":340},"mobile":{"show":false},"react":{"opacity":0.7},"log":false});</script></body>
+</html>
